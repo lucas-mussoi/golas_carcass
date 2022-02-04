@@ -4,27 +4,12 @@ library(shiny)
 library(readxl)
 library(dplyr)
 library(DT)
-#library(magrittr)
 
-#data <- read_excel("~/Downloads/GOLASG.xlsx", sheet = 3)
-
-# Data claning, 
-#aux <- c(3,9)
-#for (i in aux) {
-#    data[1,i] <- paste0("mm",i)
-#}
-
-#data <- data[,-c(7,11,13,15,17,19,21,23,25)]
-
-#colnames(data) <- data[1,]
-
-#data <- data[-c(1),]
-#data$mm3 <- as.numeric(data$mm3)
-#data$mm9 <- as.numeric(data$mm9)
 
 
 car <- function(data,c){
-    #####
+    ##### Data will be uploaded raw
+    # A few cleaning and data handling
     aux <- c(3,9)
     for (i in aux) {
         data[1,i] <- paste0("mm",i)
@@ -37,17 +22,22 @@ car <- function(data,c){
     data <- data[-c(1),]
     data$mm3 <- as.numeric(data$mm3)
     data$mm9 <- as.numeric(data$mm9)
+    
     #####
-    c1 <- which(data[,1]==c)
-    compare1 <- which.min(abs(data$mm9-data$mm3[c1]))
+    c1 <- which(data[,1]==c) # Which carcas axel diameter matchs with the collar
+    compare1 <- which.min(abs(data$mm9-data$mm3[c1])) #First comparison
     aux_data <- data[-compare1,]
-    compare2 <- which.min(abs(aux_data$mm9-aux_data$mm3[c1]))
+    compare2 <- which.min(abs(aux_data$mm9-aux_data$mm3[c1])) #Second
+    
+    # Data handling
     aux <- data[c(compare1,compare2),8:ncol(data)]
     p <- c()
-    p[1] <- round((data$mm9[compare1]/data$mm3[c1]-1)*100, digits = 2)
-    p[2] <- round((data$mm9[compare2]/data$mm3[c1]-1)*100, digits = 2)
+    p[1] <- round((data$mm9[compare1]/data$mm3[c1]-1)*100, digits = 2) # Difference between the carcass and the first collar type
+    p[2] <- round((data$mm9[compare2]/data$mm3[c1]-1)*100, digits = 2) # Difference between the carcass and the second collar type
+    
+    #Table per se
     aux <- cbind(p,data[c1,c(3,5,6)],aux)
-
+    # Rename columns names
     colnames(aux) <- c("Difference %",
                        "FAE diameter (mm)",
                        "FAE, E - length (mm)",
@@ -61,18 +51,19 @@ car <- function(data,c){
                        "E min-width Gola (mm)",
                        "F max-axle end (mm)",
                        "F min-axle end (mm)")
+    # Set binary parameter to be used to color the rows.
     aux$StyleCol <- c(ifelse(abs(aux[1,1])<=abs(aux[2,1]),1,0),
                       ifelse(abs(aux[2,1])==abs(aux[1,1]),1,0))
     return(aux)
 }
 
-# Define UI for application that draws a histogram
+# Define UI for application
 ui <- fluidPage(
 
     # Application title
     titlePanel("Gola parameters by carcass model"),
 
-    # Sidebar with a slider input for number of bins 
+    # Sidebar with a input file, select input and 
     sidebarLayout(
         sidebarPanel(
             fileInput("file", "Choose CSV File",
@@ -122,8 +113,10 @@ ui <- fluidPage(
             br(),
             br()
         ),
+        
         mainPanel(
             dataTableOutput("line"),
+            #Download button (excell)
             downloadButton('download',"Download the data"),
             h1("Caption:"),
             p("Difference: percentage difference between the first and second most close values."),
@@ -135,16 +128,15 @@ ui <- fluidPage(
 )
 # Define server logic required to draw a histogram
 server <- function(input, output, session) {
-    #mytable <- DT::renderDataTable({
-        #data
-    #})
-    
+    # Read Uploaded file
     aux2 <- eventReactive(input$file, {
         read_excel(input$file$datapath, sheet = 3)
     })
     
+    # Apply the data handling function above
     aux1 <- reactive({car(aux2(),input$variable)})
     
+    # Ouputa data per se with colored row and  horizontal sline bar
     output$line <- renderDataTable({
         datatable(aux1(),
                   options = list(paging = FALSE, scrollX = TRUE))%>%
