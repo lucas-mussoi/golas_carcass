@@ -1,2 +1,2 @@
-# golas_carcass
-App developed to facilitate the selection of the collar dimensions for pump engines axels.
+# Collar specifications selectiong via carcass model
+App developed to facilitate the selection of the collar dimensions for pump engines axels. After selecting the desired carcass model specifications of the two most ideal axel collar dimensions.
